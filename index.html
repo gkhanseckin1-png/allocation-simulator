@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allocation &amp; Replenishment Simulator</title>
+<meta name="description" content="Interactive fashion retail allocation and replenishment simulator: push allocation vs. smart allocation with replenishment, transfers and markdowns. Synthetic data.">
+<meta property="og:title" content="Allocation & Replenishment Simulator">
+<meta property="og:description" content="Play a 12-week fashion season: equal push vs. smart allocation, replenishment, transfers and markdowns. Built with AI by Ahmet Gökhan Seçkin.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gkhanseckin1-png.github.io/allocation-simulator/">
+<meta property="og:image" content="https://gkhanseckin1-png.github.io/allocation-simulator/preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta name="author" content="Ahmet Gökhan Seçkin">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f5f6f8; --surface:#fcfcfb; --surface-2:#f0f2f5; --line:#e2e5ea; --grid:#eceef1;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#7a7974;
+  --brand:#132c4a; --gold:#c98a12;
+  --s1:#2a78d6; --s2:#eb6834;
+  --good:#0a7d3c; --warn:#a86500; --crit:#c62828; --info:#2a78d6;
+  --good-bg:#e7f5ec; --warn-bg:#fdf1dc; --crit-bg:#fdeaea; --info-bg:#e8f0fb;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 18px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --bg:#111214; --surface:#1a1a19; --surface-2:#222321; --line:#2e2f2d; --grid:#2a2b29;
+    --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#97968e;
+    --brand:#9cc3ef; --gold:#e3b14a;
+    --s1:#3987e5; --s2:#d95926;
+    --good:#4cc47e; --warn:#e3a43a; --crit:#ef6b6b; --info:#6fa8ef;
+    --good-bg:#16291e; --warn-bg:#2d2414; --crit-bg:#2f1818; --info-bg:#172338;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#111214; --surface:#1a1a19; --surface-2:#222321; --line:#2e2f2d; --grid:#2a2b29;
+  --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#97968e;
+  --brand:#9cc3ef; --gold:#e3b14a;
+  --s1:#3987e5; --s2:#d95926;
+  --good:#4cc47e; --warn:#e3a43a; --crit:#ef6b6b; --info:#6fa8ef;
+  --good-bg:#16291e; --warn-bg:#2d2414; --crit-bg:#2f1818; --info-bg:#172338;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 48px}
+header.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end;margin-bottom:16px}
+.kicker{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+h1{margin:2px 0 4px;font-size:26px;letter-spacing:-.02em;color:var(--brand)}
+.sub{color:var(--ink-2);max-width:720px}
+.by{font-size:13px;color:var(--ink-2);text-align:right}
+.by a{color:var(--s1);text-decoration:none;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px}
+.grid{display:grid;gap:14px}
+.g-main{grid-template-columns:300px 1fr}
+@media (max-width:900px){.g-main{grid-template-columns:1fr}}
+h2{font-size:14px;margin:0 0 10px;color:var(--ink);letter-spacing:.01em}
+h2 small{font-weight:400;color:var(--ink-3)}
+.ctl{margin-bottom:12px}
+.ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-bottom:3px}
+.ctl label b{color:var(--ink);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--s1)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:7px 12px;border-radius:9px;cursor:pointer}
+button.primary{background:var(--s1);border-color:var(--s1);color:#fff;font-weight:600}
+button:hover{filter:brightness(1.05)}
+button:disabled{opacity:.45;cursor:default}
+.week{font-size:13px;color:var(--ink-2);margin-top:10px}
+.week b{color:var(--ink)}
+.prog{height:6px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .25s}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi .l{font-size:11.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+.kpi .row{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;gap:6px}
+.kpi .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .who{font-size:11.5px;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.d1{background:var(--s1)} .d2{background:var(--s2)}
+.delta{font-size:12px;color:var(--ink-2);margin-top:3px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin:-4px 0 6px}
+.legend span{display:flex;align-items:center;gap:6px}
+.chart{position:relative}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.ax{font-size:11px;fill:var(--ink-3)}
+.gl{stroke:var(--grid);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--ink);white-space:nowrap;opacity:0;transition:opacity .1s;z-index:5}
+.tip .t{font-weight:600;margin-bottom:2px}
+.tip div{display:flex;align-items:center;gap:6px}
+.g2{grid-template-columns:1.25fr 1fr}
+@media (max-width:900px){.g2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-weight:600;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:6px 6px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+td{padding:5px 6px;border-bottom:1px solid var(--grid)}
+td.n,th.n{text-align:right}
+.tblwrap{max-height:430px;overflow:auto}
+#stores{min-width:520px}
+#stores th,#stores td{white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.p-good{background:var(--good-bg);color:var(--good)} .p-warn{background:var(--warn-bg);color:var(--warn)}
+.p-crit{background:var(--crit-bg);color:var(--crit)} .p-info{background:var(--info-bg);color:var(--info)}
+.actions{list-style:none;margin:0;padding:0;max-height:430px;overflow:auto}
+.actions li{display:flex;gap:9px;padding:7px 2px;border-bottom:1px solid var(--grid);font-size:13px}
+.actions li:last-child{border-bottom:none}
+.ai{flex:none;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.empty{color:var(--ink-3);font-size:13px;padding:8px 2px}
+.note{font-size:12.5px;color:var(--ink-2)}
+.how{columns:2;column-gap:28px}
+@media (max-width:800px){.how{columns:1}}
+.how p{margin:0 0 9px;break-inside:avoid}
+.how b{color:var(--ink)}
+.linkbtn{background:none;border:none;color:var(--s1);padding:0;font-size:12.5px;cursor:pointer}
+footer{margin-top:18px;font-size:12px;color:var(--ink-3);text-align:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:none;border-radius:0;background:var(--surface-2);padding:5px 10px}
+.seg button.on{background:var(--s1);color:#fff}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">Fashion retail · Store allocation</div>
+      <h1>Allocation &amp; Replenishment Simulator</h1>
+      <div class="sub">One jacket, 20 stores, a 12-week season. Compare <b>equal push</b> (ship everything on day one) with <b>smart allocation</b> (cluster-based initial allocation, weekly replenishment, store-to-store transfers and a markdown rule). Same customer demand for both — only the decisions differ.</div>
+    </div>
+    <div class="by">Built with AI by <a href="https://www.linkedin.com/in/g%C3%B6khan-se%C3%A7kin-0975a6223" target="_blank" rel="noopener">Ahmet Gökhan Seçkin</a><br>Synthetic data · no real company data</div>
+  </header>
+
+  <div class="grid g-main">
+    <section class="card" aria-label="Settings">
+      <h2>Settings</h2>
+      <div class="ctl"><label for="dc">Total stock in DC <b id="dcV"></b></label><input id="dc" type="range" min="1200" max="4000" step="100" value="3600"></div>
+      <div class="ctl"><label for="woc">Target weeks of cover <b id="wocV"></b></label><input id="woc" type="range" min="1" max="6" step="0.5" value="3"></div>
+      <div class="ctl"><label for="mp">Minimum presentation per size <b id="mpV"></b></label><input id="mp" type="range" min="0" max="4" step="1" value="2"></div>
+      <div class="ctl"><label for="vol">Demand uncertainty <b id="volV"></b></label><input id="vol" type="range" min="0" max="2" step="1" value="1"></div>
+      <div class="ctl"><label for="mdw">Markdown check in week <b id="mdwV"></b></label><input id="mdw" type="range" min="5" max="10" step="1" value="8"></div>
+      <div class="ctl"><label for="mdt">Markdown if sell-through below <b id="mdtV"></b></label><input id="mdt" type="range" min="30" max="80" step="5" value="55"></div>
+      <div class="btns">
+        <button class="primary" id="next">Next week ▶</button>
+        <button id="all">Run season ⏩</button>
+        <button id="reset">Reset</button>
+        <button id="seed" title="Draw a new demand pattern">New demand ⟳</button>
+      </div>
+      <div class="week">Week <b id="wk">0</b> of 12</div>
+      <div class="prog"><i id="pg"></i></div>
+      <p class="note" style="margin-top:12px">Change a setting and the season restarts with the same demand, so you can see the effect of each decision.</p>
+    </section>
+
+    <div class="grid" style="gap:14px">
+      <div class="kpis" id="kpis"></div>
+      <section class="card">
+        <h2>Cumulative sell-through <small>· % of total stock sold</small></h2>
+        <div class="legend"><span><i class="dot d1"></i>Smart allocation</span><span><i class="dot d2"></i>Equal push</span></div>
+        <div class="chart" id="stChart"></div>
+        <button class="linkbtn" id="tblBtn" aria-expanded="false">Show as table</button>
+        <div id="stTable" hidden></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <section class="card">
+      <h2>Store status <small>· smart allocation, end of current week</small></h2>
+      <div class="tblwrap"><table id="stores"></table></div>
+    </section>
+    <section class="card">
+      <h2>Planner actions this week <small>· what the smart logic did</small></h2>
+      <ul class="actions" id="actions"></ul>
+    </section>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <section class="card">
+      <h2>Lost sales by store cluster <small>· units, season to date</small></h2>
+      <div class="legend"><span><i class="dot d1"></i>Smart allocation</span><span><i class="dot d2"></i>Equal push</span></div>
+      <div class="chart" id="lostChart"></div>
+    </section>
+    <section class="card">
+      <h2>Leftover stock by store cluster <small>· units in stores and DC</small></h2>
+      <div class="legend"><span><i class="dot d1"></i>Smart allocation</span><span><i class="dot d2"></i>Equal push</span></div>
+      <div class="chart" id="leftChart"></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:14px">
+    <h2>How the logic works</h2>
+    <div class="how">
+      <p><b>Stores.</b> 20 stores in three clusters: A (5 high-traffic stores), B (8 average), C (7 small). Each has its own weekly demand and a size curve S 20% · M 35% · L 30% · XL 15%. Demand follows a season curve (ramp-up, peak, decline) with random noise.</p>
+      <p><b>Equal push.</b> On day one the whole DC stock is split evenly across all stores by size curve. No replenishment, no transfers. A common shortcut when there is no time or data.</p>
+      <p><b>Smart initial allocation.</b> Each store gets enough for the target weeks of cover based on its forecast, never less than the minimum presentation per size. The rest stays in the DC as a reserve.</p>
+      <p><b>Weekly replenishment.</b> Every week the forecast is corrected by actual sales (demand sensing). Stores are topped up to the target cover from the DC, highest-need stores first.</p>
+      <p><b>Transfers.</b> When the DC is empty for a size, stock moves from stores with more than twice the target cover to stores that ran out.</p>
+      <p><b>Markdown.</b> In the check week, if sell-through is below the threshold, price drops 30% for the rest of the season and demand rises. Revenue is counted at €60 full price and €42 after markdown.</p>
+    </div>
+  </section>
+
+  <footer>All numbers are simulated. Made by Ahmet Gökhan Seçkin — merchandise planning, allocation &amp; replenishment · Erlangen, Germany.</footer>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+(function(){
+const SIZES=['S','M','L','XL'], CURVE=[.20,.35,.30,.15], WEEKS=12, PRICE=60, MD_PRICE=42;
+const SEASON=[.55,.8,1,1.15,1.2,1.15,1.05,.95,.85,.75,.65,.55];
+const $=id=>document.getElementById(id);
+let seed=7;
+function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+function buildStores(r){
+  const st=[]; const spec=[['A',5,26,9],['B',8,15,5],['C',7,8,3]]; let n=1;
+  for(const [c,cnt,base,spread] of spec){for(let i=0;i<cnt;i++){st.push({id:'S'+String(n++).padStart(2,'0'),cluster:c,base:base+(r()-.5)*2*spread});}}
+  return st;
+}
+function buildDemand(stores,r,vol){
+  const amp=[.15,.35,.6][vol];
+  return stores.map(s=>{const bias=1+(r()-.5)*amp*1.2;
+    return Array.from({length:WEEKS},(_,w)=>CURVE.map(c=>{const noise=Math.exp((r()-.5)*2*amp);return s.base*bias*SEASON[w]*c*noise;}));});
+}
+function cfg(){return {dc:+$('dc').value,woc:+$('woc').value,mp:+$('mp').value,vol:+$('vol').value,mdw:+$('mdw').value,mdt:+$('mdt').value/100};}
+
+let S={};
+function init(){
+  const c=cfg(); const r=rng(seed);
+  const stores=buildStores(r); const demand=buildDemand(stores,r,c.vol);
+  S={c,stores,demand,week:0,smart:newState(stores,c),push:newState(stores,c),history:[{w:0,smart:0,push:0}],actions:[]};
+  initialPush(S.push,c); initialSmart(S.smart,c,stores);
+  render();
+}
+function newState(stores,c){return {inv:stores.map(()=>[0,0,0,0]),dc:CURVE.map(x=>Math.round(c.dc*x)),total:c.dc,sold:0,soldFull:0,soldMd:0,lost:stores.map(()=>0),md:false,mdWeek:null,lastSales:stores.map(()=>[0,0,0,0]),ratio:stores.map(()=>1),stockoutWeeks:0};}
+function fcst(st,stores,i,k,w,weeks){let f=0;for(let x=w;x<Math.min(WEEKS,w+weeks);x++){f+=stores[i].base*SEASON[x]*CURVE[k];}const whole=Math.floor(weeks),frac=weeks-whole;return f*st.ratio[i]*(st.md?1.4:1);}
+function initialPush(st,c){
+  const n=S.stores.length;
+  for(let k=0;k<4;k++){const per=Math.floor(st.dc[k]/n);let rem=st.dc[k]-per*n;for(let i=0;i<n;i++){st.inv[i][k]=per+(i<rem?1:0);}st.dc[k]=0;}
+}
+function initialSmart(st,c,stores){
+  for(let k=0;k<4;k++){
+    const need=stores.map((s,i)=>Math.max(c.mp,Math.round(fcst(st,stores,i,k,0,c.woc))));
+    const tot=need.reduce((a,b)=>a+b,0); const cap=Math.round(st.dc[k]*.75);
+    const scale=tot>cap?cap/tot:1;
+    need.forEach((q,i)=>{const qq=Math.min(st.dc[k],Math.floor(q*scale));st.inv[i][k]=qq;st.dc[k]-=qq;});
+  }
+}
+function sell(st,w){
+  const d=S.demand; let stockouts=0;
+  S.stores.forEach((s,i)=>{const ls=[0,0,0,0];
+    for(let k=0;k<4;k++){const dem=Math.round(d[i][w][k]*(st.md?1.4:1));const q=Math.min(dem,st.inv[i][k]);st.inv[i][k]-=q;ls[k]=q;st.sold+=q;if(st.md)st.soldMd+=q;else st.soldFull+=q;st.lost[i]+=dem-q;if(st.inv[i][k]===0&&dem>0)stockouts++;}
+    st.lastSales[i]=ls;
+    const f=SEASON[w]*s.base*(st.md?1.4:1); const act=ls.reduce((a,b)=>a+b,0);
+    if(act>0)st.ratio[i]=.6*st.ratio[i]+.4*Math.min(2.2,Math.max(.4,act/f));
+  });
+  st.stockoutWeeks+=stockouts;
+}
+function replenishSmart(st,c,w,acts){
+  if(w>=WEEKS)return;
+  const stores=S.stores; let shipped=0,shipLines=0;
+  for(let k=0;k<4;k++){
+    const need=stores.map((s,i)=>({i,n:Math.max(c.mp,Math.round(fcst(st,stores,i,k,w,c.woc)))-st.inv[i][k]})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+    for(const x of need){if(st.dc[k]<=0)break;const q=Math.min(x.n,st.dc[k]);st.dc[k]-=q;st.inv[x.i][k]+=q;shipped+=q;shipLines++;}
+    // transfers when DC empty
+    if(st.dc[k]<=0){
+      const out=stores.map((s,i)=>i).filter(i=>st.inv[i][k]===0);
+      for(const i of out){
+        const donors=stores.map((s,j)=>({j,cov:st.inv[j][k]/Math.max(.1,fcst(st,stores,j,k,w,1))})).filter(x=>x.j!==i&&x.cov>2*c.woc&&st.inv[x.j][k]>c.mp+1).sort((a,b)=>b.cov-a.cov);
+        if(!donors.length)continue;const dj=donors[0].j;const q=Math.min(Math.max(1,Math.round(fcst(st,stores,i,k,w,Math.min(2,c.woc)))),st.inv[dj][k]-c.mp);
+        if(q<=0)continue;st.inv[dj][k]-=q;st.inv[i][k]+=q;
+        acts.push({t:'transfer',txt:`Transfer ${q} × size ${SIZES[k]} from ${stores[dj].id} (${stores[dj].cluster}) to ${stores[i].id} (${stores[i].cluster}) — destination was out of stock`});
+      }
+    }
+  }
+  if(shipped>0)acts.unshift({t:'replen',txt:`Replenished ${shipped} units from DC in ${shipLines} store/size lines to reach ${c.woc} weeks of cover`});
+  const dcLeft=st.dc.reduce((a,b)=>a+b,0);
+  if(dcLeft===0)acts.push({t:'warn',txt:'DC reserve is empty — further gaps can only be closed by store-to-store transfers'});
+}
+function markdownCheck(st,c,w,acts,label){
+  if(st.md||w!==c.mdw)return;
+  const stv=st.sold/st.total;
+  if(stv<c.mdt){st.md=true;st.mdWeek=w;if(acts)acts.push({t:'md',txt:`Sell-through ${(stv*100).toFixed(0)}% is below ${(c.mdt*100).toFixed(0)}% in week ${w} → 30% markdown for the rest of the season`});}
+  else if(acts)acts.push({t:'ok',txt:`Sell-through ${(stv*100).toFixed(0)}% in week ${w} — on track, no markdown needed`});
+}
+function step(){
+  if(S.week>=WEEKS)return;
+  const w=S.week; const acts=[];
+  sell(S.smart,w); sell(S.push,w);
+  S.week++;
+  markdownCheck(S.smart,S.c,S.week,acts); markdownCheck(S.push,S.c,S.week,null);
+  replenishSmart(S.smart,S.c,S.week,acts);
+  S.actions=acts;
+  S.history.push({w:S.week,smart:S.smart.sold/S.smart.total,push:S.push.sold/S.push.total});
+  render();
+}
+
+/* ---------- rendering ---------- */
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const pct=x=>(x*100).toFixed(1)+'%';
+function revenue(st){return st.soldFull*PRICE+st.soldMd*MD_PRICE;}
+function leftover(st){return st.inv.reduce((a,r)=>a+r.reduce((x,y)=>x+y,0),0)+st.dc.reduce((a,b)=>a+b,0);}
+function lostTot(st){return st.lost.reduce((a,b)=>a+b,0);}
+function render(){
+  const c=S.c;
+  $('dcV').textContent=fmt(c.dc)+' units';$('wocV').textContent=c.woc+' wks';$('mpV').textContent=c.mp+' units';
+  $('volV').textContent=['Low','Medium','High'][c.vol];$('mdwV').textContent='Week '+c.mdw;$('mdtV').textContent=Math.round(c.mdt*100)+'%';
+  $('wk').textContent=S.week;$('pg').style.width=(S.week/WEEKS*100)+'%';
+  $('next').disabled=$('all').disabled=S.week>=WEEKS;
+  const a=S.smart,b=S.push;
+  const k=[
+    ['Sell-through',pct(a.sold/a.total),pct(b.sold/b.total),(a.sold-b.sold)/a.total*100,'pp',true],
+    ['Revenue','€'+fmt(revenue(a)),'€'+fmt(revenue(b)),(revenue(a)-revenue(b)),'€',true],
+    ['Lost sales',fmt(lostTot(a))+' u',fmt(lostTot(b))+' u',lostTot(b)-lostTot(a),'u',true],
+    ['Leftover stock',fmt(leftover(a))+' u',fmt(leftover(b))+' u',leftover(b)-leftover(a),'u',true]
+  ];
+  $('kpis').innerHTML=k.map(([l,va,vb,d,u])=>{
+    let dt;if(S.week===0)dt='Season not started';else if(u==='pp')dt=(d>=0?'+':'')+d.toFixed(1)+' pp for smart';else if(u==='€')dt=(d>=0?'+€':'−€')+fmt(Math.abs(d))+' for smart';else dt=(d>=0?fmt(d)+' fewer':fmt(-d)+' more')+' with smart';
+    return `<div class="kpi"><div class="l">${l}</div><div class="row"><span class="v">${va}</span><span class="who"><i class="dot d1"></i>Smart</span></div><div class="row" style="margin-top:0"><span class="v" style="font-size:15px;color:var(--ink-2)">${vb}</span><span class="who"><i class="dot d2"></i>Push</span></div><div class="delta">${dt}</div></div>`;}).join('');
+  lineChart(); barChart('lostChart',st=>{const r={A:0,B:0,C:0};S.stores.forEach((s,i)=>r[s.cluster]+=st.lost[i]);return r;});
+  barChart('leftChart',st=>{const r={A:0,B:0,C:0};S.stores.forEach((s,i)=>r[s.cluster]+=st.inv[i].reduce((x,y)=>x+y,0));r.DC=st.dc.reduce((x,y)=>x+y,0);return r;});
+  storeTable(); actionList(); stTable();
+}
+const tip=$('tip');
+function showTip(html,ev){tip.innerHTML=html;tip.style.opacity=1;const pad=12;let x=ev.clientX+pad,y=ev.clientY+pad;const r=tip.getBoundingClientRect();if(x+r.width>innerWidth-8)x=ev.clientX-r.width-pad;if(y+r.height>innerHeight-8)y=ev.clientY-r.height-pad;tip.style.left=x+scrollX+'px';tip.style.top=y+scrollY+'px';tip.style.position='absolute';}
+function hideTip(){tip.style.opacity=0;}
+function lineChart(){
+  const W=700,H=260,m={l:40,r:70,t:10,b:28};const iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const x=w=>m.l+w/WEEKS*iw, y=v=>m.t+ih-v*ih;
+  let g='';for(let v=0;v<=1;v+=.25){g+=`<line class="gl" x1="${m.l}" x2="${m.l+iw}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${v*100}%</text>`;}
+  for(let w=0;w<=WEEKS;w+=2)g+=`<text class="ax" x="${x(w)}" y="${H-8}" text-anchor="middle">W${w}</text>`;
+  const h=S.history; const path=key=>h.map((p,i)=>(i?'L':'M')+x(p.w).toFixed(1)+','+y(p[key]).toFixed(1)).join('');
+  let lines='';
+  if(h.length>1){
+    lines+=`<path d="${path('push')}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    lines+=`<path d="${path('smart')}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const L=h[h.length-1];
+    const ys=[y(L.smart),y(L.push)]; if(Math.abs(ys[0]-ys[1])<14){if(ys[0]<ys[1]){ys[0]-=7;ys[1]+=7}else{ys[0]+=7;ys[1]-=7}}
+    lines+=`<circle cx="${x(L.w)}" cy="${y(L.smart)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/><circle cx="${x(L.w)}" cy="${y(L.push)}" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"/>`;
+    lines+=`<text x="${x(L.w)+8}" y="${ys[0]+4}" font-size="12" fill="var(--ink)">Smart ${pct(L.smart)}</text><text x="${x(L.w)+8}" y="${ys[1]+4}" font-size="12" fill="var(--ink-2)">Push ${pct(L.push)}</text>`;
+    const mdw=S.smart.mdWeek; if(mdw!==null)lines+=`<line x1="${x(mdw)}" x2="${x(mdw)}" y1="${m.t}" y2="${m.t+ih}" stroke="var(--ink-3)" stroke-dasharray="3 3"/><text class="ax" x="${x(mdw)+4}" y="${m.t+12}">markdown</text>`;
+  } else g+=`<text class="ax" x="${m.l+iw/2}" y="${m.t+ih/2}" text-anchor="middle">Press “Next week” to start the season</text>`;
+  $('stChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative sell-through by week, smart allocation vs equal push">${g}${lines}<line id="xh" y1="${m.t}" y2="${m.t+ih}" stroke="var(--ink-3)" stroke-width="1" opacity="0"/><rect id="hit" x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  const svg=$('stChart').querySelector('svg'), hit=svg.querySelector('#hit'), xh=svg.querySelector('#xh');
+  hit.addEventListener('mousemove',ev=>{if(h.length<2)return;const pt=svg.createSVGPoint();pt.x=ev.clientX;pt.y=ev.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());let w=Math.round((p.x-m.l)/iw*WEEKS);w=Math.max(0,Math.min(h[h.length-1].w,w));const d=h[w];xh.setAttribute('x1',x(w));xh.setAttribute('x2',x(w));xh.setAttribute('opacity',1);
+    showTip(`<div class="t">Week ${w}</div><div><i class="dot d1"></i>Smart allocation ${pct(d.smart)}</div><div><i class="dot d2"></i>Equal push ${pct(d.push)}</div>`,ev);});
+  hit.addEventListener('mouseleave',()=>{xh.setAttribute('opacity',0);hideTip();});
+}
+function barChart(id,fn){
+  const a=fn(S.smart),b=fn(S.push);const keys=Object.keys(a);
+  const W=520,H=210,m={l:44,r:10,t:18,b:28};const iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const max=Math.max(10,...keys.map(k=>Math.max(a[k],b[k])));const nice=Math.ceil(max/50)*50;
+  const y=v=>m.t+ih-v/nice*ih; const gw=iw/keys.length, bw=Math.min(34,gw/3);
+  let s='';for(let i=0;i<=4;i++){const v=nice*i/4;s+=`<line class="gl" x1="${m.l}" x2="${m.l+iw}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${m.l-6}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`;}
+  const bar=(x0,v,col,lab,k)=>{const top=y(v),hgt=Math.max(0,m.t+ih-top);const r=Math.min(4,hgt);
+    return `<path d="M${x0},${m.t+ih} V${top+r} Q${x0},${top} ${x0+r},${top} H${x0+bw-r} Q${x0+bw},${top} ${x0+bw},${top+r} V${m.t+ih} Z" fill="var(${col})" data-t="${k}" data-l="${lab}" data-v="${fmt(v)}"/>`+(v>0?`<text x="${x0+bw/2}" y="${top-4}" text-anchor="middle" font-size="11" fill="var(--ink-2)">${fmt(v)}</text>`:'');};
+  keys.forEach((k,i)=>{const cx=m.l+gw*i+gw/2;s+=bar(cx-bw-1,a[k],'--s1','Smart allocation',k)+bar(cx+1,b[k],'--s2','Equal push',k);s+=`<text class="ax" x="${cx}" y="${H-8}" text-anchor="middle">${k==='DC'?'DC':'Cluster '+k}</text>`;});
+  $(id).innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Grouped bar chart by cluster">${s}</svg>`;
+  $(id).querySelectorAll('path[data-l]').forEach(p=>{p.addEventListener('mousemove',ev=>showTip(`<div class="t">${p.dataset.t==='DC'?'DC':'Cluster '+p.dataset.t}</div><div><i class="dot ${p.dataset.l.startsWith('Smart')?'d1':'d2'}"></i>${p.dataset.l}: ${p.dataset.v} units</div>`,ev));p.addEventListener('mouseleave',hideTip);});
+}
+function storeTable(){
+  const st=S.smart,c=S.c,w=Math.min(S.week,WEEKS-1);
+  let rows=S.stores.map((s,i)=>{const inv=st.inv[i].reduce((a,b)=>a+b,0);const f=fcst(st,S.stores,i,0,w,1)/CURVE[0];const cov=f>0?inv/f:0;
+    const zero=st.inv[i].filter(v=>v===0).length;let p;
+    if(S.week>=WEEKS)p=inv>0?`<span class="pill p-info">● ${inv} left</span>`:`<span class="pill p-good">✓ Sold out</span>`;
+    else if(zero>=2)p=`<span class="pill p-crit">✕ ${zero} sizes out</span>`;
+    else if(zero===1)p=`<span class="pill p-warn">! 1 size out</span>`;
+    else if(cov>2*c.woc)p=`<span class="pill p-info">▲ Overstock</span>`;
+    else p=`<span class="pill p-good">✓ OK</span>`;
+    const ls=st.lastSales[i].reduce((a,b)=>a+b,0);
+    return `<tr><td>${s.id}</td><td>${s.cluster}</td><td class="n">${inv}</td><td class="n">${st.inv[i].join(' / ')}</td><td class="n">${S.week?ls:'–'}</td><td class="n">${cov.toFixed(1)}</td><td>${p}</td></tr>`;}).join('');
+  $('stores').innerHTML=`<thead><tr><th>Store</th><th>Cl.</th><th class="n">Stock</th><th class="n">S / M / L / XL</th><th class="n">Sold last wk</th><th class="n">Cover (wks)</th><th>Status</th></tr></thead><tbody>${rows}</tbody>`;
+}
+function actionList(){
+  const ic={replen:['p-info','↻'],transfer:['p-warn','⇄'],md:['p-crit','%'],ok:['p-good','✓'],warn:['p-warn','!']};
+  let a=S.actions;
+  if(S.week===0){const tot=S.smart.inv.reduce((x,r)=>x+r.reduce((p,q)=>p+q,0),0);a=[{t:'replen',txt:`Initial allocation: ${fmt(tot)} units sent to 20 stores for ${S.c.woc} weeks of cover (min. ${S.c.mp} per size); ${fmt(S.smart.dc.reduce((x,y)=>x+y,0))} units kept in DC as reserve`},{t:'ok',txt:'Equal push sent all '+fmt(S.c.dc)+' units to stores on day one — no reserve'}];}
+  if(S.week>=WEEKS){const A=S.smart,B=S.push;a=[{t:'ok',txt:`Season closed. Smart allocation sold ${fmt(A.sold)} units vs ${fmt(B.sold)} with equal push (${(A.sold-B.sold>=0?'+':'')}${fmt(A.sold-B.sold)}).`},{t:'replen',txt:`Revenue difference: €${fmt(revenue(A)-revenue(B))} for the same stock and the same customers.`},...(S.actions||[])];}
+  $('actions').innerHTML=a.length?a.map(x=>`<li><span class="ai pill ${ic[x.t][0]}">${ic[x.t][1]}</span><span>${x.txt}</span></li>`).join(''):'<li class="empty">No actions needed this week — all stores within target cover.</li>';
+}
+function stTable(){
+  $('stTable').innerHTML=`<table><thead><tr><th>Week</th><th class="n">Smart allocation</th><th class="n">Equal push</th></tr></thead><tbody>${S.history.map(p=>`<tr><td>W${p.w}</td><td class="n">${pct(p.smart)}</td><td class="n">${pct(p.push)}</td></tr>`).join('')}</tbody></table>`;
+}
+$('tblBtn').onclick=()=>{const t=$('stTable');t.hidden=!t.hidden;$('tblBtn').textContent=t.hidden?'Show as table':'Hide table';$('tblBtn').setAttribute('aria-expanded',String(!t.hidden));};
+$('next').onclick=step;
+$('all').onclick=()=>{while(S.week<WEEKS)step();};
+$('reset').onclick=init;
+$('seed').onclick=()=>{seed=Math.floor(Math.random()*1e6);init();};
+['dc','woc','mp','vol','mdw','mdt'].forEach(id=>$(id).addEventListener('input',init));
+init();
+})();
+</script>
+</body>
+</html>
